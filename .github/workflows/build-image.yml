@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: ""
+        description: "版本号，留空则自动使用作者最新 Release"
         required: false
         type: string
 
