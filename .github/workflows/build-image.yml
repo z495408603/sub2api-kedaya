@@ -52,17 +52,15 @@ jobs:
           echo "---- 修改前 ----"
           grep -n "golang:\|GOTOOLCHAIN" source/Dockerfile || true
 
-          # 把所有 golang 基础镜像的小版本统一换成 1.26.10，兼容带后缀的写法
-          sed -i -E 's#(FROM[[:space:]]+golang:1\.26\.[0-9]+)#FROM golang:1.26.10#g' source/Dockerfile
-          # 如果上游是 golang:1.26 这种没小版本的，补成 1.26.10
-          sed -i -E 's#(FROM[[:space:]]+)golang:1\.26([[:space:]]|$)#\1golang:1.26.10\2#g' source/Dockerfile
+          # 上游是 ARG GOLANG_IMAGE=golang:1.26.9-alpine
+          # 直接替换 golang:1.26.x，并保留 -alpine 等后缀
+          sed -i -E 's#golang:1\.26\.[0-9]+(-[a-zA-Z0-9.]+)?#golang:1.26.10\1#g' source/Dockerfile
           # 放开工具链自动下载，避免 GOTOOLCHAIN=local 卡死
           sed -i 's#GOTOOLCHAIN=local#GOTOOLCHAIN=auto#g' source/Dockerfile
 
           echo "---- 修改后 ----"
           grep -n "golang:\|GOTOOLCHAIN" source/Dockerfile || true
 
-          # 如果改完还是 1.26.9，说明上游写法不一样，直接失败方便排查
           if grep -q "golang:1\.26\.9" source/Dockerfile; then
             echo "::error::Dockerfile 里仍存在 golang:1.26.9，请手动确认上游写法"
             exit 1
@@ -87,6 +85,7 @@ jobs:
           push: true
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
+            GOLANG_IMAGE=golang:1.26.10-alpine
           tags: |
             ghcr.io/z495408603/sub2api-kedaya:${{ steps.version.outputs.version }}
             ghcr.io/z495408603/sub2api-kedaya:latest
