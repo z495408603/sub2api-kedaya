@@ -46,6 +46,16 @@ jobs:
             --branch "${{ steps.version.outputs.tag }}" \
             https://github.com/kiss-kedaya/sub2api.git source
 
+      - name: 修正 Dockerfile 的 Go 版本
+        run: |
+          set -euo pipefail
+          grep -n "golang:" source/Dockerfile || true
+          sed -i -E 's#(FROM[[:space:]]+golang:)1\.26\.[0-9]+#\11.26.10#g' source/Dockerfile
+          # 如果上游设了 GOTOOLCHAIN=local，顺便放开
+          sed -i 's#GOTOOLCHAIN=local#GOTOOLCHAIN=auto#g' source/Dockerfile
+          echo "---- 修改后的 Dockerfile ----"
+          cat source/Dockerfile
+
       - name: 登录 GHCR
         uses: docker/login-action@v3
         with:
