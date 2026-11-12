@@ -54,7 +54,7 @@ jobs:
 
           # 上游是 ARG GOLANG_IMAGE=golang:1.26.9-alpine
           # 直接替换 golang:1.26.x，并保留 -alpine 等后缀
-          sed -i -E 's#golang:1\.26\.[0-9]+(-[a-zA-Z0-9.]+)?#golang:1.26.10\1#g' source/Dockerfile
+          sed -i -E 's#golang:1\.26\.[0-9]+(-[a-zA-Z0-9.]+)?#golang:1.26.11\1#g' source/Dockerfile
           # 放开工具链自动下载，避免 GOTOOLCHAIN=local 卡死
           sed -i 's#GOTOOLCHAIN=local#GOTOOLCHAIN=auto#g' source/Dockerfile
 
@@ -85,7 +85,7 @@ jobs:
           push: true
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
-            GOLANG_IMAGE=golang:1.26.10-alpine
+            GOLANG_IMAGE=golang:1.26.11-alpine
           tags: |
             ghcr.io/z495408603/sub2api-kedaya:${{ steps.version.outputs.version }}
             ghcr.io/z495408603/sub2api-kedaya:latest
