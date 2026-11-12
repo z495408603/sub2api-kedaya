@@ -50,21 +50,20 @@ jobs:
         run: |
           set -euo pipefail
           echo "---- 修改前 ----"
-          grep -n "golang:\|GOTOOLCHAIN" source/Dockerfile || true
+          cat source/Dockerfile | head -n 20
 
-          # 上游是 ARG GOLANG_IMAGE=golang:1.26.9-alpine
-          # 直接替换 golang:1.26.x，并保留 -alpine 等后缀
-          sed -i -E 's#golang:1\.26\.[0-9]+(-[a-zA-Z0-9.]+)?#golang:1.26.11\1#g' source/Dockerfile
-          # 放开工具链自动下载，避免 GOTOOLCHAIN=local 卡死
+          # 1. 暴力替换 Dockerfile 中所有 1.26.x 的版本号为 1.26.11
+          # 这是为了防止上游使用了 ARG GOLANG_VERSION=1.26.10 这样的变量定义
+          sed -i -E 's#1\.26\.[0-9]+#1.26.11#g' source/Dockerfile
+          
+          # 2. 把所有的 local 替换为 auto
           sed -i 's#GOTOOLCHAIN=local#GOTOOLCHAIN=auto#g' source/Dockerfile
+          
+          # 3. 终极兜底：直接在 Dockerfile 第一行强行注入环境变量，无视上游写法
+          sed -i '1i ENV GOTOOLCHAIN=auto' source/Dockerfile
 
           echo "---- 修改后 ----"
-          grep -n "golang:\|GOTOOLCHAIN" source/Dockerfile || true
-
-          if grep -q "golang:1\.26\.9" source/Dockerfile; then
-            echo "::error::Dockerfile 里仍存在 golang:1.26.9，请手动确认上游写法"
-            exit 1
-          fi
+          cat source/Dockerfile | head -n 25
 
       - name: 登录 GHCR
         uses: docker/login-action@v3
@@ -86,8 +85,9 @@ jobs:
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
             GOLANG_IMAGE=golang:1.26.11-alpine
+            GOLANG_VERSION=1.26.11
           tags: |
             ghcr.io/z495408603/sub2api-kedaya:${{ steps.version.outputs.version }}
             ghcr.io/z495408603/sub2api-kedaya:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # 注意：这里去掉了 cache-from 和 cache-to
+          # 因为之前的构建失败可能污染了 GHA 缓存，导致它一直用旧的 1.26.10 镜像
